@@ -1,17 +1,37 @@
-# app/__init__.py
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from config import Config
+from flask_login import LoginManager
+from config.config import Config
+from datetime import datetime
 
-db = SQLAlchemy()
+# Initialize Flask app
+app = Flask(__name__)
+app.config.from_object(Config)
 
-def create_app():
-    app = Flask(__name__)
-    app.config.from_object(Config)
-    
-    db.init_app(app)
-    
-    from app.routes import main
-    app.register_blueprint(main)
-    
-    return app
+# Initialize SQLAlchemy
+db = SQLAlchemy(app)
+
+# Initialize LoginManager
+login_manager = LoginManager(app)
+login_manager.login_view = 'auth.login'
+
+# Add context processor for template variables
+@app.context_processor
+def inject_now():
+    return {'current_year': datetime.utcnow().year}
+
+# Import blueprints
+from app.controllers.auth import auth_bp
+from app.controllers.main import main_bp
+
+# Register blueprints
+app.register_blueprint(auth_bp)
+app.register_blueprint(main_bp)
+
+# Import models for Flask-Login
+from app.models.user import User
+from app.models.preference import Preference
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))

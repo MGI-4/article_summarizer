@@ -1,0 +1,12 @@
+{
+    "name": "article-summarizer",
+    "version": "1.0.0",
+    "description": "Article Summarizer SaaS App",
+    "scripts": {
+      "build-css": "tailwindcss -i ./app/static/tailwind/input.css -o ./app/static/css/main.css --minify",
+      "watch-css": "tailwindcss -i ./app/static/tailwind/input.css -o ./app/static/css/main.css --watch"
+    },
+    "devDependencies": {
+      "tailwindcss": "^3.3.3"
+    }
+  }

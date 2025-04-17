@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Set Preferences - Article Summarizer{% endblock %}
+
+{% block extra_css %}
+<style>
+    .source-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .source-input {
+        flex-grow: 1;
+    }
+    
+    .remove-source {
+        cursor: pointer;
+        margin-left: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-xl shadow-md overflow-hidden">
+    <div class="p-8">
+        <div class="uppercase tracking-wide text-sm text-blue-600 font-semibold mb-1">Customize Your Experience</div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">Set Your Preferences</h2>
+        
+        <form method="POST" action="{{ url_for('main.input') }}" id="preference-form">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Area of Interest -->
+                <div class="col-span-1 md:col-span-2">
+                    <label for="area_of_interest" class="block text-gray-700 text-sm font-bold mb-2">Area of Interest</label>
+                    <input type="text" name="area_of_interest" id="area_of_interest" required
+                        value="{{ preference.area_of_interest if preference else '' }}"
+                        placeholder="E.g., Machine Learning, Climate Change, Finance"
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                
+                <!-- Time Range -->
+                <div>
+                    <label for="start_date" class="block text-gray-700 text-sm font-bold mb-2">Start Date</label>
+                    <input type="date" name="start_date" id="start_date" required
+                        value="{{ preference.start_date if preference else '' }}"
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                
+                <div>
+                    <label for="end_date" class="block text-gray-700 text-sm font-bold mb-2">End Date</label>
+                    <input type="date" name="end_date" id="end_date" required
+                        value="{{ preference.end_date if preference else '' }}"
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                
+                <!-- Sources -->
+                <div class="col-span-1 md:col-span-2">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Sources</label>
+                    <p class="text-gray-600 text-sm mb-3">Add one or more sources for articles</p>
+                    
+                    <div id="sources-container">
+                        {% if preference and preference.sources %}
+                            {% for source in preference.sources %}
+                                <div class="source-item">
+                                    <input type="text" name="source" required
+                                        value="{{ source }}"
+                                        placeholder="E.g., nytimes.com, techcrunch.com"
+                                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline source-input">
+                                    <span class="text-red-500 remove-source" onclick="removeSource(this)">
+                                        <i class="fas fa-times"></i>
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="source-item">
+                                <input type="text" name="source" required
+                                    placeholder="E.g., nytimes.com, techcrunch.com"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline source-input">
+                                <span class="text-red-500 remove-source" onclick="removeSource(this)">
+                                    <i class="fas fa-times"></i>
+                                </span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <button type="button" id="add-source" class="mt-2 text-sm text-blue-600 hover:text-blue-500 flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Add Another Source
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-8">
+                <button type="submit" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full">
+                    Save Preferences
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add Source button functionality
+        const addSourceBtn = document.getElementById('add-source');
+        const sourcesContainer = document.getElementById('sources-container');
+        
+        addSourceBtn.addEventListener('click', function() {
+            const sourceItem = document.createElement('div');
+            sourceItem.className = 'source-item';
+            sourceItem.innerHTML = `
+                <input type="text" name="source" required
+                    placeholder="E.g., nytimes.com, techcrunch.com"
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline source-input">
+                <span class="text-red-500 remove-source" onclick="removeSource(this)">
+                    <i class="fas fa-times"></i>
+                </span>
+            `;
+            
+            sourcesContainer.appendChild(sourceItem);
+        });
+        
+        // Date validation - end date must be after start date
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+        
+        function validateDates() {
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(endDateInput.value);
+            
+            if (startDate > endDate) {
+                endDateInput.setCustomValidity('End date must be after start date');
+            } else {
+                endDateInput.setCustomValidity('');
+            }
+        }
+        
+        startDateInput.addEventListener('change', validateDates);
+        endDateInput.addEventListener('change', validateDates);
+        
+        // Set initial dates if not already set
+        if (!startDateInput.value) {
+            const today = new Date();
+            const lastMonth = new Date();
+            lastMonth.setMonth(today.getMonth() - 1);
+            
+            startDateInput.value = lastMonth.toISOString().slice(0, 10);
+            endDateInput.value = today.toISOString().slice(0, 10);
+        }
+    });
+    
+    // Function to remove a source input
+    function removeSource(button) {
+        const sourcesContainer = document.getElementById('sources-container');
+        const sourceItem = button.parentNode;
+        
+        // Don't remove if it's the only source input
+        if (sourcesContainer.childElementCount > 1) {
+            sourcesContainer.removeChild(sourceItem);
+        }
+    }
+</script>
+{% endblock %}

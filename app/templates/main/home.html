@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Article Summarizer{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-xl shadow-md overflow-hidden">
+    <div class="p-8">
+        <!-- Header section with timeframe -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <div>
+                <div class="uppercase tracking-wide text-sm text-blue-600 font-semibold mb-1">Your Summaries</div>
+                <h2 class="text-2xl font-bold text-gray-900">{{ preference.area_of_interest }}</h2>
+                <p class="text-gray-600">
+                    {{ preference.start_date }} to {{ preference.end_date }}
+                </p>
+            </div>
+            
+            <!-- Change timeframe form -->
+            <div class="mt-4 md:mt-0">
+                <button id="change-timeframe-btn" class="text-blue-600 hover:text-blue-500 flex items-center">
+                    <i class="fas fa-calendar-alt mr-2"></i> Change Timeframe
+                </button>
+                
+                <form id="timeframe-form" method="POST" action="{{ url_for('main.update_timeframe') }}" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
+                    <input type="hidden" name="preference_id" value="{{ preference.id }}">
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="start_date" class="block text-gray-700 text-sm font-bold mb-2">Start Date</label>
+                            <input type="date" name="start_date" id="start_date" required
+                                value="{{ preference.start_date }}"
+                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                        
+                        <div>
+                            <label for="end_date" class="block text-gray-700 text-sm font-bold mb-2">End Date</label>
+                            <input type="date" name="end_date" id="end_date" required
+                                value="{{ preference.end_date }}"
+                                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-end">
+                        <button type="button" id="cancel-timeframe-btn" class="text-gray-600 hover:text-gray-800 mr-4">
+                            Cancel
+                        </button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                            Update
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Sources badges -->
+        <div class="mb-6">
+            <p class="text-sm text-gray-700 mb-2">Sources:</p>
+            <div class="flex flex-wrap gap-2">
+                {% for source in preference.sources %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {{ source }}
+                    </span>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <hr class="my-6">
+        
+        <!-- Article summaries -->
+        <div class="space-y-8">
+            {% if summaries.summaries %}
+                {% for summary in summaries.summaries %}
+                    <div class="bg-gray-50 p-6 rounded-lg">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                            <h3 class="text-xl font-semibold text-gray-900">
+                                {% if summary.article_url %}
+                                <a href="{{ summary.article_url }}" target="_blank" rel="noopener noreferrer" 
+                                   class="hover:text-blue-600 hover:underline">
+                                    {{ summary.title }}
+                                </a>
+                                {% else %}
+                                    {{ summary.title }}
+                                {% endif %}
+                            </h3>
+                            <span class="text-sm text-gray-600 mt-1 md:mt-0">From: {{ summary.source }}</span>
+                        </div>
+                        
+                        <ul class="list-disc pl-5 space-y-2">
+                            {% for point in summary.summary_text %}
+                                <li class="text-gray-700">{{ point }}</li>
+                            {% endfor %}
+                        </ul>
+                        
+                        {% if summary.article_url %}
+                        <div class="mt-4 text-right">
+                            <a href="{{ summary.article_url }}" target="_blank" rel="noopener noreferrer" 
+                               class="text-sm text-blue-600 hover:text-blue-500 hover:underline inline-flex items-center">
+                                <span>Read full article</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center p-8">
+                    <i class="fas fa-newspaper text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-700">No article summaries available for the selected criteria.</p>
+                    <a href="{{ url_for('main.input') }}" class="mt-4 inline-block text-blue-600 hover:text-blue-500">
+                        Update your preferences
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Citations section -->
+        {% if summaries.citations %}
+            <div class="mt-12">
+                <h3 class="text-xl font-bold text-gray-900 mb-4">Citations</h3>
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <ul class="space-y-3">
+                        {% for citation in summaries.citations %}
+                            <li>
+                                <a href="{{ citation.url }}" target="_blank" rel="noopener noreferrer" 
+                                   class="text-blue-600 hover:text-blue-500 hover:underline font-medium">
+                                    {{ citation.title }}
+                                </a>
+                                <p class="text-sm text-gray-600">
+                                    {{ citation.source }} | {{ citation.date }}
+                                </p>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Timeframe form toggle
+        const changeTimeframeBtn = document.getElementById('change-timeframe-btn');
+        const cancelTimeframeBtn = document.getElementById('cancel-timeframe-btn');
+        const timeframeForm = document.getElementById('timeframe-form');
+        
+        changeTimeframeBtn.addEventListener('click', function() {
+            timeframeForm.classList.toggle('hidden');
+        });
+        
+        cancelTimeframeBtn.addEventListener('click', function() {
+            timeframeForm.classList.add('hidden');
+        });
+        
+        // Date validation - end date must be after start date
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+        
+        function validateDates() {
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(endDateInput.value);
+            
+            if (startDate > endDate) {
+                endDateInput.setCustomValidity('End date must be after start date');
+            } else {
+                endDateInput.setCustomValidity('');
+            }
+        }
+        
+        startDateInput.addEventListener('change', validateDates);
+        endDateInput.addEventListener('change', validateDates);
+    });
+</script>
+{% endblock %}

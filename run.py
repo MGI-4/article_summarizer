@@ -1,27 +1,24 @@
-from app import create_app, db
-from app.models import User, UserPreference, Source
+from app import app
+from app.utils.db_helper import init_db
+import os
+from dotenv import load_dotenv
 
-app = create_app()
+# Load environment variables
+load_dotenv()
 
-@app.shell_context_processor
-def make_shell_context():
-    return {
-        'db': db,
-        'User': User,
-        'UserPreference': UserPreference,
-        'Source': Source
-    }
+# Initialize the database if needed
+init_db()
 
-def init_db():
-    with app.app_context():
-        db.create_all()
-        
-        # Create default user if none exists
-        if not User.query.first():
-            user = User(username='default_user')
-            db.session.add(user)
-            db.session.commit()
-
-if __name__ == '__main__':
-    init_db()
-    app.run(debug=True)
+if __name__ == "__main__":
+    # Get port from environment variable or use default 5000
+    port = int(os.environ.get('PORT', 5000))
+    
+    # Start the Flask application
+    # In development mode, debug=True enables auto-reload on file changes
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() in ('true', '1', 't')
+    
+    app.run(
+        host='0.0.0.0',  # Makes the server accessible from any device on the network
+        port=port,
+        debug=debug_mode
+    )
